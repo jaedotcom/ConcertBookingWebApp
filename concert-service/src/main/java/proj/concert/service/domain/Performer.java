@@ -1,11 +1,13 @@
 package proj.concert.service.domain;
 
+import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.Table;
 
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
@@ -23,15 +25,20 @@ import proj.concert.common.types.Genre;
  * blurb the performer's description.
  */
 @Entity
+@Table(name = "PERFORMER")
 public class Performer implements Comparable<Performer> {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String name;
+
+    @Column(name = "IMAGE_NAME")
     private String imageName;
 
     @Enumerated(EnumType.STRING)
     private Genre genre;
+
+    @Column(name = "BLURB", columnDefinition = "varchar(1000)")
     private String blurb;
 
     public Performer() {

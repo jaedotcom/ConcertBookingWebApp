@@ -1,5 +1,6 @@
 package proj.concert.service.domain;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.TreeSet;
 
@@ -8,8 +9,12 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
+import javax.persistence.JoinTable;
+import javax.persistence.CollectionTable;
+import javax.persistence.Column;
 import javax.persistence.ElementCollection;
 import javax.persistence.ManyToMany;
+import javax.persistence.Table;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -28,20 +33,27 @@ import java.util.Set;
  * blurb the concert's description
  */
 @Entity
-public class Concert {
+@Table(name = "CONCERTS")
+public class Concert implements Serializable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String title;
+
+    @Column(name = "IMAGE_NAME")
     private String imageName;
+
+    @Column(name = "BLURB", length = 1023)
     private String blrb;
 
     @ElementCollection
+    @CollectionTable(name = "CONCERT_DATES", joinColumns = @JoinColumn(name = "concert_id"))
+    @Column(name = "date")
     private Set<LocalDateTime> dates = new TreeSet<LocalDateTime>();
 
     @ManyToMany
-    @JoinColumn(name = "performer_id")
+    @JoinTable(name = "CONCERT_PERFORMER", joinColumns = @JoinColumn(name = "concert_id"), inverseJoinColumns = @JoinColumn(name = "performer_id"))
     private List<Performer> performers = new ArrayList<>();
 
     public Concert() {

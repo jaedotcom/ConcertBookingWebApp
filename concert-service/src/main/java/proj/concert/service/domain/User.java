@@ -2,6 +2,7 @@ package proj.concert.service.domain;
 
 import javax.persistence.Entity;
 import javax.persistence.Id;
+import javax.persistence.Table;
 
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
@@ -14,10 +15,15 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
  * password the user's password.
  */
 @Entity
+@Table(name = "USERS")
 public class User {
     @Id
+    private long id;
+
     private String username;
     private String password;
+
+    private int version;
 
     protected User() {
     }
