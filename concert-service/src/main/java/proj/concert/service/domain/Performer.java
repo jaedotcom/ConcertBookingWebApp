@@ -25,7 +25,7 @@ import proj.concert.common.types.Genre;
  * blurb the performer's description.
  */
 @Entity
-@Table(name = "PERFORMER")
+@Table(name = "PERFORMERS")
 public class Performer implements Comparable<Performer> {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
