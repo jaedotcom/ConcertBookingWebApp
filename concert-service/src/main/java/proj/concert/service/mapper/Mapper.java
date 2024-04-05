@@ -58,4 +58,13 @@ public class Mapper {
 
     }
 
+    public static PerformerDTO toDto(Performer performer) {
+        PerformerDTO dtoPerformer = new PerformerDTO(
+                performer.getId(),
+                performer.getName(),
+                performer.getImageName(), performer.getGenre(), performer.getBlurb());
+
+        return dtoPerformer;
+    }
+
 }
