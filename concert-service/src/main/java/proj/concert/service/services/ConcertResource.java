@@ -12,7 +12,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
-import proj.concert.service.mapper.ConcertMapper;
+import proj.concert.service.mapper.Mapper;
 import proj.concert.common.dto.ConcertSummaryDTO;
 import proj.concert.common.dto.ConcertDTO;
 import proj.concert.service.domain.Concert;
@@ -50,7 +50,7 @@ public class ConcertResource {
         try {
             Concert concert = em.find(Concert.class, id);
 
-            concertDto = ConcertMapper.toDto(concert);
+            concertDto = Mapper.toDto(concert);
         } catch (Exception e) {
             return Response.status(404).build();
         } finally {
@@ -71,7 +71,7 @@ public class ConcertResource {
         try {
             TypedQuery<Concert> query = em.createQuery("select c from Concert c", Concert.class);
             for (Concert concert : query.getResultList()) {
-                concertsDto.add(ConcertMapper.toDto(concert));
+                concertsDto.add(Mapper.toDto(concert));
             }
 
         } catch (Exception e) {
