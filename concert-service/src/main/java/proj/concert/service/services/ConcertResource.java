@@ -105,4 +105,27 @@ public class ConcertResource {
         return Response.ok(performerDto).build();
 
     }
+
+    @GET
+    @Path("/performers")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response retrievePerformers() {
+        EntityManager em = PersistenceManager.instance().createEntityManager();
+        ArrayList<PerformerDTO> performersDto = new ArrayList<PerformerDTO>();
+
+        try {
+            TypedQuery<Performer> query = em.createQuery("select p from Performer p", Performer.class);
+            for (Performer performer : query.getResultList()) {
+                performersDto.add(Mapper.toDto(performer));
+            }
+
+        } catch (Exception e) {
+            return Response.status(404).build();
+        } finally {
+            em.close();
+        }
+
+        return Response.ok(performersDto).build();
+
+    }
 }
