@@ -60,4 +60,26 @@ public class ConcertResource {
         return Response.ok(concertDto).build();
 
     }
+
+    @GET
+    @Path("/concerts")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response retrieveConcerts() {
+        EntityManager em = PersistenceManager.instance().createEntityManager();
+        ArrayList<ConcertDTO> concertsDto = new ArrayList<ConcertDTO>();
+
+        try {
+            TypedQuery<Concert> query = em.createQuery("select c from Concert c", Concert.class);
+            for (Concert concert : query.getResultList()) {
+                concertsDto.add(ConcertMapper.toDto(concert));
+            }
+
+        } catch (Exception e) {
+            return Response.status(404).build();
+        } finally {
+            em.close();
+        }
+
+        return Response.ok(concertsDto).build();
+    }
 }
