@@ -14,8 +14,10 @@ import javax.ws.rs.core.Response;
 
 import proj.concert.service.mapper.Mapper;
 import proj.concert.common.dto.ConcertSummaryDTO;
+import proj.concert.common.dto.PerformerDTO;
 import proj.concert.common.dto.ConcertDTO;
 import proj.concert.service.domain.Concert;
+import proj.concert.service.domain.Performer;
 
 @Path("/concert-service")
 public class ConcertResource {
@@ -81,5 +83,26 @@ public class ConcertResource {
         }
 
         return Response.ok(concertsDto).build();
+    }
+
+    @GET
+    @Path("/performers/{id}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response retrievePerformer(@PathParam(value = "id") long id) {
+        EntityManager em = PersistenceManager.instance().createEntityManager();
+        PerformerDTO performerDto = null;
+
+        try {
+            Performer performer = em.find(Performer.class, id);
+
+            performerDto = Mapper.toDto(performer);
+        } catch (Exception e) {
+            return Response.status(404).build();
+        } finally {
+            em.close();
+        }
+
+        return Response.ok(performerDto).build();
+
     }
 }
