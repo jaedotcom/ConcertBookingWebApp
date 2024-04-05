@@ -1,5 +1,6 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>nz.ac.auckland</groupId>
     <artifactId>proj-concert</artifactId>
@@ -24,6 +25,12 @@
         <module>concert-client</module>
     </modules>
 
+    <pluginRepositories>
+        <pluginRepository>
+            <id>rzymek-snapshots</id>
+            <url>https://github.com/rzymek/repository/raw/master/snapshots</url>
+        </pluginRepository>
+    </pluginRepositories>
     <dependencies>
         <!-- JUnit. -->
         <dependency>
@@ -84,10 +91,43 @@
                 </configuration> 
                 -->
                 <configuration>
-                      <source>11</source>
-                      <target>11</target>
-               </configuration>
-           </plugin>
+                    <source>11</source>
+                    <target>11</target>
+                </configuration>
+            </plugin>
+
+
+            <plugin>
+                <groupId>com.fizzed</groupId>
+                <artifactId>fizzed-watcher-maven-plugin</artifactId>
+                <version>1.0.6</version>
+                <configuration>
+                    <touchFile>target/classes/watcher.txt</touchFile>
+                    <watches>
+                        <watch>
+                            <directory>./concert-service/src</directory>
+                        </watch>
+
+                    </watches>
+                    <goals>
+                        <!-- <goal>compile</goal> -->
+                        <!-- <goal>package war:inplace</goal> -->
+                        <goal>package</goal>
+                    </goals>
+                    <profiles>
+                        <profile>optional-profile-to-activate</profile>
+                    </profiles>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
+    <reporting>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-report-plugin</artifactId>
+                <version>3.2.5</version>
+            </plugin>
+        </plugins>
+    </reporting>
 </project>
