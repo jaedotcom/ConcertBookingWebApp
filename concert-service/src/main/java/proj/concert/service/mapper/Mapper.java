@@ -14,9 +14,9 @@ import proj.concert.service.domain.Performer;
 
 /**
  * Helper class to convert between domain-model and DTO objects representing
- * Parolees.
+ * Concerts or Performers or ....gonna add all to same file 😈😈....
  */
-public class ConcertMapper {
+public class Mapper {
 
     public static Concert toDomainModel(ConcertDTO dtoConcert) {
         Concert fullConcert = new Concert(
@@ -57,4 +57,5 @@ public class ConcertMapper {
         return dtoConcert;
 
     }
+
 }
