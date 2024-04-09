@@ -38,7 +38,7 @@ public class Performer implements Comparable<Performer> {
     @Enumerated(EnumType.STRING)
     private Genre genre;
 
-    @Column(name = "BLURB", columnDefinition = "varchar(1000)")
+    @Column(name = "BLURB", length = 1023)
     private String blurb;
 
     public Performer() {
