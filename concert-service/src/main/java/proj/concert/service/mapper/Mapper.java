@@ -9,8 +9,10 @@ import java.util.stream.Collectors;
 
 import proj.concert.common.dto.ConcertDTO;
 import proj.concert.common.dto.PerformerDTO;
+import proj.concert.common.dto.SeatDTO;
 import proj.concert.service.domain.Concert;
 import proj.concert.service.domain.Performer;
+import proj.concert.service.domain.Seat;
 
 /**
  * Helper class to convert between domain-model and DTO objects representing
@@ -65,6 +67,14 @@ public class Mapper {
                 performer.getImageName(), performer.getGenre(), performer.getBlurb());
 
         return dtoPerformer;
+    }
+
+    // Add version stuff once learnt :)
+    public static SeatDTO toDto(Seat seat) {
+        SeatDTO dtoSeat = new SeatDTO(
+            seat.getLabel(), seat.getPrice());
+
+        return dtoSeat;
     }
 
 }
