@@ -18,6 +18,8 @@ import proj.concert.common.dto.PerformerDTO;
 import proj.concert.common.dto.ConcertDTO;
 import proj.concert.service.domain.Concert;
 import proj.concert.service.domain.Performer;
+import proj.concert.common.dto.SeatDTO;
+import proj.concert.service.domain.Seat;
 
 @Path("/concert-service")
 public class ConcertResource {
@@ -128,4 +130,28 @@ public class ConcertResource {
         return Response.ok(performersDto).build();
 
     }
+
+    // Not actually checking by date, but is correct output
+    @GET
+    @Path("/seats/{date}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response retrieveSeats(@PathParam("date") String date) {
+
+        EntityManager em = PersistenceManager.instance().createEntityManager();
+        ArrayList<SeatDTO> seatsDto = new ArrayList<SeatDTO>();
+
+        try{
+            TypedQuery<Seat> query = em.createQuery("select s from Seat s", Seat.class);
+            for (Seat seat : query.getResultList()){
+                seatsDto.add(Mapper.toDto(seat));
+            }
+        } catch (Exception e){
+            return Response.status(404).build();
+        } finally{
+            em.close();
+        }
+        
+        return Response.ok(seatsDto).build();
+    }
 }
+
