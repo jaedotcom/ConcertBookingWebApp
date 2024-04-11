@@ -45,14 +45,19 @@ public class ConcertUtils {
 
             // For each concert date, create the seats for that date and persist them.
             int seatCount = 0;
+            for (LocalDateTime date : allDates) {
 
-            em.getTransaction().begin();
-            Set<Seat> seatsForDate = TheatreLayout.createSeatsFor();
-            for (Seat s : seatsForDate) {
-                em.persist(s);
-                seatCount++;
+                em.getTransaction().begin();
+                Set<Seat> seatsForDate = TheatreLayout.createSeatsFor(date);
+                for (Seat s : seatsForDate) {
+                    em.persist(s);
+                    seatCount++;
+                }
+                em.getTransaction().commit();
+
+                // Ensures we aren't braking the EM with thousands of seat entities.
+                em.clear();
             }
-            em.getTransaction().commit();
 
             LOGGER.debug("initConcerts(): Created " + seatCount + " seats!");
         } finally {
