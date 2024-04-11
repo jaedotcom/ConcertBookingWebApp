@@ -3,21 +3,26 @@ package proj.concert.service.services;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import javax.persistence.EntityManager;
 import javax.persistence.EntityTransaction;
 import javax.persistence.NoResultException;
 import javax.persistence.PersistenceException;
 import javax.persistence.TypedQuery;
+import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
-import javax.ws.rs.Consumes;
+
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.container.AsyncResponse;
+import javax.ws.rs.container.Suspended;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.NewCookie;
 import javax.ws.rs.core.Response;
@@ -28,6 +33,8 @@ import proj.concert.common.dto.PerformerDTO;
 import proj.concert.common.dto.BookingRequestDTO;
 import proj.concert.common.dto.ConcertDTO;
 import proj.concert.service.domain.Booking;
+import proj.concert.common.dto.ConcertInfoNotificationDTO;
+import proj.concert.common.dto.ConcertInfoSubscriptionDTO;
 import proj.concert.service.domain.Concert;
 import proj.concert.service.domain.Performer;
 import proj.concert.common.dto.SeatDTO;
@@ -39,6 +46,7 @@ import java.util.UUID;
 
 @Path("/concert-service")
 public class ConcertResource {
+    ExecutorService threadPool = Executors.newCachedThreadPool();
 
     @GET
     @Path("/concerts/summaries")
@@ -225,10 +233,10 @@ public class ConcertResource {
             System.out.println("%%%%%%%%%%%%%%%%%%%%%%%%% DENIED@!!@ %%%%%%%%%%%%%%%%%%%%%%%%%%");
             return false;
         }
-    
+
         String username = credentials[0];
         String password = credentials[1];
-    
+
         return authenticate(username, password);
     }
 
@@ -342,4 +350,101 @@ public class ConcertResource {
         return newCookie;
     }
 
+    @Path("/subscribe/concertInfo")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public void subscribeToConcert(@Suspended AsyncResponse response, ConcertInfoSubscriptionDTO dtoSubInfo) {
+        // response.resume(Response.status(401).build()); // for unauthorized
+
+        System.out.println("here 1:)");
+        EntityManager em = PersistenceManager.instance().createEntityManager();
+        try {
+
+            // ObjectMapper mapper = new ObjectMapper();
+            // JsonNode paroleeNode = mapper.readTree(is);
+            System.out.println("here 2:)");
+            System.out.println(dtoSubInfo);
+
+            // ConcertInfoSubscription subInfo = Mapper.toDomainModel(dtoSubInfo);
+            // em.persist(subInfo);
+            System.out.println("here 3:)");
+
+            boolean isValidConcert = em.find(Concert.class, dtoSubInfo.getConcertId()).getDates()
+                    .contains(dtoSubInfo.getDate());
+
+            // if (query.getResultList().size() == 1) {
+            // LocalDateTime concertDateToSubscribeTo = query.getSingleResult();
+            // System.out.println("found the date");
+            // } else {
+            // response.resume(Response.status(400).build());
+            // }
+
+            if (!isValidConcert)
+                throw new Exception("no concert date found. therefore, could not subscribe to it.");
+
+            System.out.println("here 4:)");
+        } catch (Exception e) {
+            System.out.println("something failed!" + e.getMessage());
+            response.resume(Response.status(400).build());
+            return;
+        } finally {
+            em.close();
+        }
+        threadPool.submit(() -> {
+            EntityManager em1 = PersistenceManager.instance().createEntityManager();
+            // try {
+            // recheck booking and see if condition is met or the concert is here
+
+            TypedQuery<Seat> query = em1
+                    .createQuery("select s from Seat s where s.date='" + dtoSubInfo.getDate().toString()
+                            + "' and s.isBooked=false", Seat.class);
+            int numSeatsRemaining = query.getResultList().size();
+
+            System.out.println("initial 1");
+            System.out.println(dtoSubInfo.getPercentageBooked());
+            System.out.println(numSeatsRemaining);
+            System.out.println((float) numSeatsRemaining * 100.0 / 120.0);
+            while ((float) numSeatsRemaining * 100.0 / 120.0 > dtoSubInfo.getPercentageBooked()
+            // && LocalDateTime.now().isBefore(dtoSubInfo.getDate())
+            ) {
+                System.out.println("checking inner");
+                try {
+
+                    TypedQuery<Seat> query1 = em1
+                            .createQuery("select s from Seat s where s.date='" + dtoSubInfo.getDate().toString()
+                                    + "' and s.isBooked=false", Seat.class);
+                    numSeatsRemaining = query1.getResultList().size();
+                    System.out.println(numSeatsRemaining);
+                    try {
+                        Thread.sleep(500);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                        response.resume(Response.status(405).build());
+                        em1.close();
+                        return;
+                    }
+                } catch (IllegalStateException e) {
+                    em1 = PersistenceManager.instance().createEntityManager();
+                    System.out.println("restarting the entity manager");
+                }
+
+            }
+
+            ConcertInfoNotificationDTO notification = new ConcertInfoNotificationDTO(numSeatsRemaining);
+            Response result = Response.ok(notification).build();
+            response.resume(result);
+            System.out.println("closing :(");
+            em1.close();
+            // } catch (Exception e) {
+            // System.out.println("something went wrong again lol");
+            // System.out.println(e.getMessage());
+            // System.out.println(e.getClass());
+
+            // } finally {
+
+            // }
+
+        });
+
+    }
 }
