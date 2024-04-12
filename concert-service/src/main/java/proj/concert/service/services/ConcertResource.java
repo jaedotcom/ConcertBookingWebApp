@@ -356,94 +356,53 @@ public class ConcertResource {
     public void subscribeToConcert(@Suspended AsyncResponse response, ConcertInfoSubscriptionDTO dtoSubInfo) {
         // response.resume(Response.status(401).build()); // for unauthorized
 
-        System.out.println("here 1:)");
         EntityManager em = PersistenceManager.instance().createEntityManager();
+
         try {
-
-            // ObjectMapper mapper = new ObjectMapper();
-            // JsonNode paroleeNode = mapper.readTree(is);
-            System.out.println("here 2:)");
-            System.out.println(dtoSubInfo);
-
-            // ConcertInfoSubscription subInfo = Mapper.toDomainModel(dtoSubInfo);
-            // em.persist(subInfo);
-            System.out.println("here 3:)");
-
             boolean isValidConcert = em.find(Concert.class, dtoSubInfo.getConcertId()).getDates()
                     .contains(dtoSubInfo.getDate());
 
-            // if (query.getResultList().size() == 1) {
-            // LocalDateTime concertDateToSubscribeTo = query.getSingleResult();
-            // System.out.println("found the date");
-            // } else {
-            // response.resume(Response.status(400).build());
-            // }
-
             if (!isValidConcert)
-                throw new Exception("no concert date found. therefore, could not subscribe to it.");
-
-            System.out.println("here 4:)");
+                throw new Exception("couldn't subscribe, concert not found!");
         } catch (Exception e) {
-            System.out.println("something failed!" + e.getMessage());
             response.resume(Response.status(400).build());
             return;
         } finally {
             em.close();
         }
-        threadPool.submit(() -> {
-            EntityManager em1 = PersistenceManager.instance().createEntityManager();
-            // try {
-            // recheck booking and see if condition is met or the concert is here
 
-            TypedQuery<Seat> query = em1
+        threadPool.submit(() -> {
+            EntityManager emForThread = PersistenceManager.instance().createEntityManager();
+            TypedQuery<Seat> query = emForThread
                     .createQuery("select s from Seat s where s.date='" + dtoSubInfo.getDate().toString()
                             + "' and s.isBooked=false", Seat.class);
             int numSeatsRemaining = query.getResultList().size();
 
-            System.out.println("initial 1");
-            System.out.println(dtoSubInfo.getPercentageBooked());
-            System.out.println(numSeatsRemaining);
-            System.out.println((float) numSeatsRemaining * 100.0 / 120.0);
-            while ((float) numSeatsRemaining * 100.0 / 120.0 > dtoSubInfo.getPercentageBooked()
-            // && LocalDateTime.now().isBefore(dtoSubInfo.getDate())
-            ) {
-                System.out.println("checking inner");
+            // recheck booking and see if condition is met or the concert is here
+            while ((float) numSeatsRemaining * 100.0 / 120.0 > dtoSubInfo.getPercentageBooked()) {
                 try {
-
-                    TypedQuery<Seat> query1 = em1
+                    TypedQuery<Seat> query1 = emForThread
                             .createQuery("select s from Seat s where s.date='" + dtoSubInfo.getDate().toString()
                                     + "' and s.isBooked=false", Seat.class);
                     numSeatsRemaining = query1.getResultList().size();
-                    System.out.println(numSeatsRemaining);
+
                     try {
                         Thread.sleep(500);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                         response.resume(Response.status(405).build());
-                        em1.close();
+                        emForThread.close();
                         return;
                     }
                 } catch (IllegalStateException e) {
-                    em1 = PersistenceManager.instance().createEntityManager();
-                    System.out.println("restarting the entity manager");
+                    emForThread = PersistenceManager.instance().createEntityManager();
                 }
 
             }
 
             ConcertInfoNotificationDTO notification = new ConcertInfoNotificationDTO(numSeatsRemaining);
-            Response result = Response.ok(notification).build();
-            response.resume(result);
-            System.out.println("closing :(");
-            em1.close();
-            // } catch (Exception e) {
-            // System.out.println("something went wrong again lol");
-            // System.out.println(e.getMessage());
-            // System.out.println(e.getClass());
-
-            // } finally {
-
-            // }
-
+            response.resume(Response.ok(notification).build());
+            emForThread.close();
         });
 
     }
