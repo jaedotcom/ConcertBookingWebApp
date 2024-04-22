@@ -1,6 +1,8 @@
 package proj.concert.service.domain;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 import javax.persistence.Entity;
 import javax.persistence.Id;
@@ -14,24 +16,25 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
  * A Seat describes a seat in terms of:
  * label the seat label
  * price the price
+ * date the concert date
+ * isBooked - whether it is booked or not
  */
 @Entity
-public class Seat {
+public class Seat implements Serializable {
 	@Id
 	private String label;
+	@Id
+	private LocalDateTime date;
 	private BigDecimal price;
+	private boolean isBooked = false;
 
 	public Seat() {
 	}
 
-	// why do we need to connect a seat with a specific date & is booked,
-	// this could be deduced from the various reservations
-	// this was here from the start 👇
-	// public Seat(String label, boolean isBooked, LocalDateTime date, BigDecimal
-	// cost) {
-	public Seat(String label, BigDecimal price) {
+	public Seat(String label, LocalDateTime date, BigDecimal price) {
 		this.label = label;
 		this.price = price;
+		this.date = date;
 	}
 
 	public String getLabel() {
@@ -48,6 +51,14 @@ public class Seat {
 
 	public void setPrice(BigDecimal price) {
 		this.price = price;
+	}
+
+	public boolean getIsBooked() {
+		return this.isBooked;
+	}
+
+	public void setIsBoooked(boolean isBooked) {
+		this.isBooked = isBooked;
 	}
 
 	@Override

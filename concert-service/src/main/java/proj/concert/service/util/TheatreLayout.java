@@ -25,9 +25,10 @@ public class TheatreLayout {
     /**
      * A utility function that creates all required {@link Seat} objects for a concert on the given date.
      *
+     * @param date the date
      * @return a list of Seat objects
      */
-    public static Set<Seat> createSeatsFor() {
+    public static Set<Seat> createSeatsFor(LocalDateTime date) {
 
         Set<Seat> seats = new HashSet<>();
 
@@ -42,8 +43,9 @@ public class TheatreLayout {
             for (int seatNum = 1; seatNum <= NUM_SEATS_PER_ROW; seatNum++) {
 
                 String seatLabel = "" + rowLabel + seatNum;
-                seats.add(new Seat(seatLabel, currentPricing.price));
 
+                seats.add(new Seat(
+                        seatLabel, date, currentPricing.price));
             }
 
             rowsCreatedThisPricingBand++;
