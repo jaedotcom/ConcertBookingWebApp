@@ -5,14 +5,23 @@ import java.util.ArrayList;
 import java.util.List;
 
 import javax.persistence.EntityManager;
+import javax.persistence.NoResultException;
 import javax.persistence.TypedQuery;
 import javax.ws.rs.GET;
+import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+<<<<<<< HEAD
 import javax.ws.rs.QueryParam;
+=======
+import javax.ws.rs.Consumes;
+>>>>>>> 8f9dd1b (Refactor LoginResource for secure token generation and user authentication)
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.NewCookie;
 import javax.ws.rs.core.Response;
+
+import org.apache.http.cookie.Cookie;
 
 import proj.concert.service.mapper.Mapper;
 import proj.concert.common.dto.ConcertSummaryDTO;
@@ -21,7 +30,13 @@ import proj.concert.common.dto.ConcertDTO;
 import proj.concert.service.domain.Concert;
 import proj.concert.service.domain.Performer;
 import proj.concert.common.dto.SeatDTO;
+import proj.concert.common.dto.UserDTO;
 import proj.concert.service.domain.Seat;
+import proj.concert.service.domain.User;
+import proj.concert.service.dao.UserDao;
+
+import java.util.UUID;
+
 
 @Path("/concert-service")
 public class ConcertResource {
@@ -140,7 +155,11 @@ public class ConcertResource {
 
         EntityManager em = PersistenceManager.instance().createEntityManager();
         ArrayList<SeatDTO> seatsDto = new ArrayList<SeatDTO>();
+<<<<<<< HEAD
         LocalDateTime checkDate = LocalDateTime.parse(date);
+=======
+        
+>>>>>>> 8f9dd1b (Refactor LoginResource for secure token generation and user authentication)
         try{
             TypedQuery<Seat> query = em.createQuery("select s from Seat s", Seat.class);
             System.out.println("***********************************");
@@ -163,5 +182,65 @@ public class ConcertResource {
         
         return Response.ok(seatsDto).build();
     }
+
+    @POST
+    @Path("/login")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response authenticateUser(UserDTO credentials) {
+        System.out.println("***************** Authenticating user: " + credentials.getUsername() + " *******************");
+        System.out.println("***************** Password is:" + credentials.getPassword() + " *******************");
+        try {
+            boolean loggedIn = authenticate(credentials.getUsername(), credentials.getPassword());
+            System.err.println("***************** loggedIn is:" + loggedIn + " *******************");
+    
+            if (!loggedIn) {
+                return Response.status(Response.Status.UNAUTHORIZED).build();
+            } else {
+                NewCookie token = makeCookie(credentials.getUsername());
+                return Response.ok().cookie(token).build();
+            }
+    
+        } catch (Exception e) {
+            System.out.println("***************** catch exception!!!!! *****************");
+            e.printStackTrace();
+            return Response.status(Response.Status.UNAUTHORIZED).build();
+        }
+    }
+    
+        private boolean authenticate(String username, String password) {
+            System.err.println("%%%%%%%%%%%%%%%%% At Boolean! --> Authenticating user: " + username + " %%%%%%%%%%%%%%%%%%%");
+            EntityManager em = PersistenceManager.instance().createEntityManager();
+            try {
+                TypedQuery<User> query = em.createQuery("SELECT u FROM User u WHERE u.username = :username", User.class);
+                query.setParameter("username", username);
+                User user = query.getSingleResult();
+                if(user == null) {
+                    System.out.println("%%%%%%%%%%%%%%%%% User not found");
+                    return false;
+                }
+                System.out.println("%%%%%%%%%%%%%%%%% user: " + user);
+                System.out.println("%%%%%%%%%%%%%%%%% user.getPassword() is:" + user.getPassword() + " and password is:" + password);
+                if(!user.getPassword().equals(password)) {
+                    System.out.println("%%%%%%%%%%%%%%%%% Invalid credentials");
+                    return false;
+                }
+                return true;
+            } catch (NoResultException nre) {
+                System.out.println("%%%%%%%%%%%%%%%%% User not found");
+                return false;
+            } finally {
+                em.close();
+            }
+        }
+
+        private NewCookie makeCookie(String clientId) {
+            String id = clientId != null ? clientId : UUID.randomUUID().toString();
+            NewCookie newCookie = new NewCookie("auth", id);
+            return newCookie;
+        }
+    
 }
+
+
 
