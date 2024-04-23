@@ -142,17 +142,19 @@ public class ConcertResource {
         ArrayList<SeatDTO> seatsDto = new ArrayList<SeatDTO>();
         LocalDateTime checkDate = LocalDateTime.parse(date);
         try{
-            TypedQuery<Seat> query = em.createQuery("select s from Seat s", Seat.class);
-            System.out.println("***********************************");
+            TypedQuery<Seat> query = em.createQuery("select s from Seat s where s.date = :checkDate", Seat.class).setParameter("checkDate", checkDate);
             if (status.equals("Any")){
-                System.out.println("into the first IF");
+                for (Seat seat : query.getResultList()){ seatsDto.add(Mapper.toDto(seat));}
+            } 
+            else if (status.equals("Booked")){
                 for (Seat seat : query.getResultList()){
-                    if (seat.getDate().isEqual(checkDate)){ seatsDto.add(Mapper.toDto(seat));}
+                    if (seat.getIsBooked()){ seatsDto.add(Mapper.toDto(seat));}
                 }
-            } else if (status.equals("Booked")){
-                
-            } else if (status.equals("Unbooked")){
-
+            } 
+            else if (status.equals("Unbooked")){
+                for (Seat seat : query.getResultList()){
+                    if (seat.getIsBooked() == false){ seatsDto.add(Mapper.toDto(seat));}
+                }
             }
 
         } catch (Exception e){
