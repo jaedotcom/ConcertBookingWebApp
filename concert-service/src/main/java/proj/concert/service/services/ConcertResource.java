@@ -10,6 +10,7 @@ import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
@@ -135,16 +136,25 @@ public class ConcertResource {
     @GET
     @Path("/seats/{date}")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response retrieveSeats(@PathParam("date") String date) {
+    public Response retrieveSeatsByDate( @PathParam("date") String date, @QueryParam("status") String status) {    
 
         EntityManager em = PersistenceManager.instance().createEntityManager();
         ArrayList<SeatDTO> seatsDto = new ArrayList<SeatDTO>();
         LocalDateTime checkDate = LocalDateTime.parse(date);
         try{
             TypedQuery<Seat> query = em.createQuery("select s from Seat s", Seat.class);
-            for (Seat seat : query.getResultList()){
-                if (seat.getDate().isEqual(checkDate)){ seatsDto.add(Mapper.toDto(seat));}
+            System.out.println("***********************************");
+            if (status.equals("Any")){
+                System.out.println("into the first IF");
+                for (Seat seat : query.getResultList()){
+                    if (seat.getDate().isEqual(checkDate)){ seatsDto.add(Mapper.toDto(seat));}
+                }
+            } else if (status.equals("Booked")){
+                
+            } else if (status.equals("Unbooked")){
+
             }
+
         } catch (Exception e){
             return Response.status(404).build();
         } finally{
