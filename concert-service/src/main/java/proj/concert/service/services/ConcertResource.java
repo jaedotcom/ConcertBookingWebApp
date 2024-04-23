@@ -1,5 +1,6 @@
 package proj.concert.service.services;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -131,7 +132,6 @@ public class ConcertResource {
 
     }
 
-    // Not actually checking by date, but is correct output
     @GET
     @Path("/seats/{date}")
     @Produces(MediaType.APPLICATION_JSON)
@@ -139,11 +139,11 @@ public class ConcertResource {
 
         EntityManager em = PersistenceManager.instance().createEntityManager();
         ArrayList<SeatDTO> seatsDto = new ArrayList<SeatDTO>();
-
+        LocalDateTime checkDate = LocalDateTime.parse(date);
         try{
             TypedQuery<Seat> query = em.createQuery("select s from Seat s", Seat.class);
             for (Seat seat : query.getResultList()){
-                seatsDto.add(Mapper.toDto(seat));
+                if (seat.getDate().isEqual(checkDate)){ seatsDto.add(Mapper.toDto(seat));}
             }
         } catch (Exception e){
             return Response.status(404).build();
