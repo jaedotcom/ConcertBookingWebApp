@@ -53,6 +53,14 @@ public class Seat implements Serializable {
 		this.price = price;
 	}
 
+	public LocalDateTime getDate(){
+		return date;
+	}
+
+	public void setDate(LocalDateTime date){
+		this.date = date;
+	}
+
 	public boolean getIsBooked() {
 		return this.isBooked;
 	}
