@@ -31,6 +31,7 @@ import proj.concert.service.domain.User;
 
 import java.util.UUID;
 
+
 @Path("/concert-service")
 public class ConcertResource {
 
@@ -144,38 +145,32 @@ public class ConcertResource {
     @GET
     @Path("/seats/{date}")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response retrieveSeatsByDate(@PathParam("date") String date, @QueryParam("status") String status) {
+    public Response retrieveSeatsByDate( @PathParam("date") String date, @QueryParam("status") String status) {    
 
         EntityManager em = PersistenceManager.instance().createEntityManager();
         ArrayList<SeatDTO> seatsDto = new ArrayList<SeatDTO>();
         LocalDateTime checkDate = LocalDateTime.parse(date);
-        try {
-            TypedQuery<Seat> query = em.createQuery("select s from Seat s where s.date = :checkDate", Seat.class)
-                    .setParameter("checkDate", checkDate);
-            if (status.equals("Any")) {
-                for (Seat seat : query.getResultList()) {
-                    seatsDto.add(Mapper.toDto(seat));
+        
+        try{
+            TypedQuery<Seat> query = em.createQuery("select s from Seat s", Seat.class);
+            System.out.println("***********************************");
+            if (status.equals("Any")){
+                System.out.println("into the first IF");
+                for (Seat seat : query.getResultList()){
+                    if (seat.getDate().isEqual(checkDate)){ seatsDto.add(Mapper.toDto(seat));}
                 }
-            } else if (status.equals("Booked")) {
-                for (Seat seat : query.getResultList()) {
-                    if (seat.getIsBooked()) {
-                        seatsDto.add(Mapper.toDto(seat));
-                    }
-                }
-            } else if (status.equals("Unbooked")) {
-                for (Seat seat : query.getResultList()) {
-                    if (seat.getIsBooked() == false) {
-                        seatsDto.add(Mapper.toDto(seat));
-                    }
-                }
+            } else if (status.equals("Booked")){
+                
+            } else if (status.equals("Unbooked")){
+
             }
 
-        } catch (Exception e) {
+        } catch (Exception e){
             return Response.status(404).build();
-        } finally {
+        } finally{
             em.close();
         }
-
+        
         return Response.ok(seatsDto).build();
     }
 
@@ -184,59 +179,56 @@ public class ConcertResource {
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Response authenticateUser(UserDTO credentials) {
-        System.out.println(
-                "***************** Authenticating user: " + credentials.getUsername() + " *******************");
-        System.out.println("***************** Password is:" + credentials.getPassword() + " *******************");
         try {
             boolean loggedIn = authenticate(credentials.getUsername(), credentials.getPassword());
-            System.err.println("***************** loggedIn is:" + loggedIn + " *******************");
-
+    
             if (!loggedIn) {
                 return Response.status(Response.Status.UNAUTHORIZED).build();
+
             } else {
                 NewCookie token = makeCookie(credentials.getUsername());
                 return Response.ok().cookie(token).build();
             }
-
+    
         } catch (Exception e) {
-            System.out.println("***************** catch exception!!!!! *****************");
             e.printStackTrace();
             return Response.status(Response.Status.UNAUTHORIZED).build();
         }
     }
+    
+        private boolean authenticate(String username, String password) {
 
-    private boolean authenticate(String username, String password) {
-        System.err
-                .println("%%%%%%%%%%%%%%%%% At Boolean! --> Authenticating user: " + username + " %%%%%%%%%%%%%%%%%%%");
-        EntityManager em = PersistenceManager.instance().createEntityManager();
-        try {
-            TypedQuery<User> query = em.createQuery("SELECT u FROM User u WHERE u.username = :username", User.class);
-            query.setParameter("username", username);
-            User user = query.getSingleResult();
-            if (user == null) {
-                System.out.println("%%%%%%%%%%%%%%%%% User not found");
+            EntityManager em = PersistenceManager.instance().createEntityManager();
+
+            try {
+                TypedQuery<User> query = em.createQuery("SELECT u FROM User u WHERE u.username = :username", User.class);
+                query.setParameter("username", username);
+                User user = query.getSingleResult();
+
+                if(user == null) {
+                    return false;
+                }
+                if(!user.getPassword().equals(password)) {
+                    return false;
+                }
+                return true;
+
+            } catch (NoResultException nre) {
                 return false;
+
+            } finally {
+                em.close();
+
             }
-            System.out.println("%%%%%%%%%%%%%%%%% user: " + user);
-            System.out.println(
-                    "%%%%%%%%%%%%%%%%% user.getPassword() is:" + user.getPassword() + " and password is:" + password);
-            if (!user.getPassword().equals(password)) {
-                System.out.println("%%%%%%%%%%%%%%%%% Invalid credentials");
-                return false;
-            }
-            return true;
-        } catch (NoResultException nre) {
-            System.out.println("%%%%%%%%%%%%%%%%% User not found");
-            return false;
-        } finally {
-            em.close();
         }
-    }
 
-    private NewCookie makeCookie(String clientId) {
-        String id = clientId != null ? clientId : UUID.randomUUID().toString();
-        NewCookie newCookie = new NewCookie("auth", id);
-        return newCookie;
-    }
-
+        private NewCookie makeCookie(String clientId) {
+            String id = clientId != null ? clientId : UUID.randomUUID().toString();
+            NewCookie newCookie = new NewCookie("auth", id);
+            return newCookie;
+        }
+    
 }
+
+
+
