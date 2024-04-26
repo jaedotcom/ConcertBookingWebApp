@@ -12,6 +12,7 @@ import javax.persistence.NoResultException;
 import javax.persistence.PersistenceException;
 import javax.persistence.TypedQuery;
 import javax.ws.rs.Consumes;
+import javax.ws.rs.CookieParam;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
@@ -351,10 +352,15 @@ public class ConcertResource {
     }
 
     @Path("/subscribe/concertInfo")
+    @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public void subscribeToConcert(@Suspended AsyncResponse response, ConcertInfoSubscriptionDTO dtoSubInfo) {
-        // response.resume(Response.status(401).build()); // for unauthorized
+    public void subscribeToConcert(@Suspended AsyncResponse response, ConcertInfoSubscriptionDTO dtoSubInfo,
+            @CookieParam("auth") NewCookie clientId) {
+        if (clientId == null) {
+            response.resume(Response.status(401).build()); // for unauthorized
+            return;
+        }
 
         EntityManager em = PersistenceManager.instance().createEntityManager();
 
