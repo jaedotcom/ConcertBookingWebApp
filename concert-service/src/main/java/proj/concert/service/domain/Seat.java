@@ -65,7 +65,7 @@ public class Seat implements Serializable {
 		return this.isBooked;
 	}
 
-	public void setIsBoooked(boolean isBooked) {
+	public void setIsBooked(boolean isBooked) {
 		this.isBooked = isBooked;
 	}
 

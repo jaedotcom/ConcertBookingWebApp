@@ -21,6 +21,7 @@ import javax.ws.rs.core.Response;
 import proj.concert.service.mapper.Mapper;
 import proj.concert.common.dto.ConcertSummaryDTO;
 import proj.concert.common.dto.PerformerDTO;
+import proj.concert.common.dto.BookingRequestDTO;
 import proj.concert.common.dto.ConcertDTO;
 import proj.concert.service.domain.Concert;
 import proj.concert.service.domain.Performer;
@@ -142,6 +143,8 @@ public class ConcertResource {
 
     }
 
+
+
     @GET
     @Path("/seats/{date}")
     @Produces(MediaType.APPLICATION_JSON)
@@ -153,17 +156,33 @@ public class ConcertResource {
         
         try{
             TypedQuery<Seat> query = em.createQuery("select s from Seat s", Seat.class);
-            System.out.println("***********************************");
-            if (status.equals("Any")){
-                System.out.println("into the first IF");
-                for (Seat seat : query.getResultList()){
-                    if (seat.getDate().isEqual(checkDate)){ seatsDto.add(Mapper.toDto(seat));}
-                }
-            } else if (status.equals("Booked")){
-                
-            } else if (status.equals("Unbooked")){
 
+            for (Seat seat : query.getResultList()) {
+
+                if (seat.getDate().isEqual(checkDate)) {
+
+                    if (status.equals("Any")) {
+                        seatsDto.add(Mapper.toDto(seat));
+
+                    } else if (status.equals("Booked") && seat.getIsBooked()) {
+                        seatsDto.add(Mapper.toDto(seat));
+
+                    } else if (status.equals("Unbooked") && !seat.getIsBooked()) {
+                        seatsDto.add(Mapper.toDto(seat));
+                    }
+                }
             }
+            // System.out.println("***********************************");
+            // if (status.equals("Any")){
+            //     System.out.println("into the first IF");
+            //     for (Seat seat : query.getResultList()){
+            //         if (seat.getDate().isEqual(checkDate)){ seatsDto.add(Mapper.toDto(seat));}
+            //     }
+            // } else if (status.equals("Booked")){
+                
+            // } else if (status.equals("Unbooked")){
+
+            // }
 
         } catch (Exception e){
             return Response.status(404).build();
@@ -173,6 +192,31 @@ public class ConcertResource {
         
         return Response.ok(seatsDto).build();
     }
+
+    @Path("/bookings")
+    @POST
+    @Consumes(MediaType.APPLICATION_JSON)
+    public Response makeBooking(BookingRequestDTO bookingRequest) {
+
+        EntityManager em = PersistenceManager.instance().createEntityManager();
+
+        try {
+            em.getTransaction().begin();
+            TypedQuery<Seat> query = em.createQuery("select s from Seat s where s.date = :date and s.label = :label", Seat.class);
+            query.setParameter("date", bookingRequest.getDate());
+            query.setParameter("label", bookingRequest.getSeatLabels());
+            Seat seat = query.getSingleResult();
+            seat.setIsBooked(true);
+            em.getTransaction().commit();
+            return Response.ok().build();
+
+        } catch (Exception e) {
+            return Response.status(404).build();
+        } finally {
+            em.close();
+        }
+    }
+
 
     @POST
     @Path("/login")
@@ -227,7 +271,9 @@ public class ConcertResource {
             NewCookie newCookie = new NewCookie("auth", id);
             return newCookie;
         }
-    
+ 
+        
+
 }
 
 
