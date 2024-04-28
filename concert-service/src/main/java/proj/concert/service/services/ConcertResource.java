@@ -197,19 +197,36 @@ public class ConcertResource {
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     public Response makeBooking(BookingRequestDTO bookingRequest) {
-
+    
         EntityManager em = PersistenceManager.instance().createEntityManager();
-
+    
         try {
             em.getTransaction().begin();
-            TypedQuery<Seat> query = em.createQuery("select s from Seat s where s.date = :date and s.label = :label", Seat.class);
+            // added "IN :label"
+            System.out.println("################## AFTER TRANSACTION ##################");
+            TypedQuery<Seat> query = em.createQuery("select s from Seat s where s.date = :date and s.label IN :labels", Seat.class);
             query.setParameter("date", bookingRequest.getDate());
+            //This could be causing the query to fail, resulting in a 400 status code.
+            System.out.println("##################" + bookingRequest.getSeatLabels() + "##################");
             query.setParameter("label", bookingRequest.getSeatLabels());
-            Seat seat = query.getSingleResult();
-            seat.setIsBooked(true);
-            em.getTransaction().commit();
-            return Response.ok().build();
 
+            List<Seat> seats = query.getResultList();
+
+            if (seats.isEmpty()) {
+                return Response.status(Response.Status.BAD_REQUEST).build();
+            }
+
+            for (Seat seat : seats) {
+                if (seat.getIsBooked()) {
+                    return Response.status(Response.Status.FORBIDDEN).build();
+                }
+    
+                seat.setIsBooked(true);
+            }
+
+            em.getTransaction().commit();
+            return Response.status(Response.Status.CREATED).build();
+    
         } catch (Exception e) {
             return Response.status(404).build();
         } finally {
