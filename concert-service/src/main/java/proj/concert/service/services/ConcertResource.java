@@ -5,7 +5,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 import javax.persistence.EntityManager;
+import javax.persistence.EntityTransaction;
 import javax.persistence.NoResultException;
+import javax.persistence.PersistenceException;
 import javax.persistence.TypedQuery;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -14,6 +16,8 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.Consumes;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.NewCookie;
 import javax.ws.rs.core.Response;
@@ -23,6 +27,7 @@ import proj.concert.common.dto.ConcertSummaryDTO;
 import proj.concert.common.dto.PerformerDTO;
 import proj.concert.common.dto.BookingRequestDTO;
 import proj.concert.common.dto.ConcertDTO;
+import proj.concert.service.domain.Booking;
 import proj.concert.service.domain.Concert;
 import proj.concert.service.domain.Performer;
 import proj.concert.common.dto.SeatDTO;
@@ -31,7 +36,6 @@ import proj.concert.service.domain.Seat;
 import proj.concert.service.domain.User;
 
 import java.util.UUID;
-
 
 @Path("/concert-service")
 public class ConcertResource {
@@ -143,97 +147,141 @@ public class ConcertResource {
 
     }
 
-
-
     @GET
     @Path("/seats/{date}")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response retrieveSeatsByDate( @PathParam("date") String date, @QueryParam("status") String status) {    
+    public Response retrieveSeatsByDate(@PathParam("date") String date, @QueryParam("status") String status) {
 
         EntityManager em = PersistenceManager.instance().createEntityManager();
         ArrayList<SeatDTO> seatsDto = new ArrayList<SeatDTO>();
         LocalDateTime checkDate = LocalDateTime.parse(date);
-        
-        try{
+
+        try {
             TypedQuery<Seat> query = em.createQuery("select s from Seat s", Seat.class);
 
             for (Seat seat : query.getResultList()) {
 
                 if (seat.getDate().isEqual(checkDate)) {
 
-                    if (status.equals("Any")) {
+                    if (status != null && status.equals("Any")) {
                         seatsDto.add(Mapper.toDto(seat));
 
-                    } else if (status.equals("Booked") && seat.getIsBooked()) {
+                    } else if (status != null && status.equals("Booked") && seat.getIsBooked()) {
                         seatsDto.add(Mapper.toDto(seat));
 
-                    } else if (status.equals("Unbooked") && !seat.getIsBooked()) {
+                    } else if (status != null && status.equals("Unbooked") && !seat.getIsBooked()) {
                         seatsDto.add(Mapper.toDto(seat));
                     }
                 }
             }
-            // System.out.println("***********************************");
-            // if (status.equals("Any")){
-            //     System.out.println("into the first IF");
-            //     for (Seat seat : query.getResultList()){
-            //         if (seat.getDate().isEqual(checkDate)){ seatsDto.add(Mapper.toDto(seat));}
-            //     }
-            // } else if (status.equals("Booked")){
-                
-            // } else if (status.equals("Unbooked")){
 
-            // }
-
-        } catch (Exception e){
-            return Response.status(404).build();
-        } finally{
+        } catch (PersistenceException e) {
+            e.printStackTrace();
+            return Response.status(500).build();
+        } finally {
             em.close();
         }
-        
+
         return Response.ok(seatsDto).build();
+    }
+
+    @Path("/bookings")
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response getAllBookings(@Context HttpHeaders headers) {
+
+        String authHeader = headers.getHeaderString(HttpHeaders.AUTHORIZATION);
+        if (authHeader == null || !isAuthenticated(authHeader)) {
+            // If not authenticated, return a 401 status code
+            System.out.println("%%%%%%%%%%%%%%%%%%%%%%%%% Not authenticated %%%%%%%%%%%%%%%%%%%%%%%%%%");
+
+            return Response.status(Response.Status.UNAUTHORIZED).build();
+        }
+
+        System.out.println("%%%%%%%%%%%%%%%%%%%%%%%%% Authenticated %%%%%%%%%%%%%%%%%%%%%%%%%%");
+
+        EntityManager em = PersistenceManager.instance().createEntityManager();
+        try {
+            TypedQuery<Booking> query = em.createQuery("select b from Booking b", Booking.class);
+            List<Booking> bookings = query.getResultList();
+            System.out.println("%%%%%%%%%%%%%%%%%%%%%%%%% Bookings %%%%%%%%%%%%%%%%%%%%%%%%%%");
+            System.out.println(bookings);
+
+            return Response.ok(bookings).build();
+        } catch (PersistenceException e) {
+            System.out.println("%%%%%%%%%%%%%%%%%%%%%%%%% UGH bookings 500 %%%%%%%%%%%%%%%%%%%%%%%%%%");
+            e.printStackTrace();
+            return Response.status(500).build();
+        } finally {
+            em.close();
+        }
+    }
+
+    private boolean isAuthenticated(String authHeader) {
+        // Split the authHeader into username + password
+        System.out.println("%%%%%%%%%%%%%%%%%%%%%%%%% Auth header %%%%%%%%%%%%%%%%%%%%%%%%%%");
+        String[] credentials = authHeader.split(":");
+        if (credentials.length != 2) {
+            System.out.println("%%%%%%%%%%%%%%%%%%%%%%%%% DENIED@!!@ %%%%%%%%%%%%%%%%%%%%%%%%%%");
+            return false;
+        }
+    
+        String username = credentials[0];
+        String password = credentials[1];
+    
+        return authenticate(username, password);
     }
 
     @Path("/bookings")
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     public Response makeBooking(BookingRequestDTO bookingRequest) {
-    
+
         EntityManager em = PersistenceManager.instance().createEntityManager();
-    
+        EntityTransaction transaction = em.getTransaction();
         try {
-            em.getTransaction().begin();
-            // added "IN :label"
-            System.out.println("################## AFTER TRANSACTION ##################");
-            TypedQuery<Seat> query = em.createQuery("select s from Seat s where s.date = :date and s.label IN :labels", Seat.class);
+            transaction.begin();
+            TypedQuery<Seat> query = em.createQuery("select s from Seat s where s.date = :date and s.label IN :labels",
+                    Seat.class);
             query.setParameter("date", bookingRequest.getDate());
-            //This could be causing the query to fail, resulting in a 400 status code.
-            System.out.println("##################" + bookingRequest.getSeatLabels() + "##################");
-            query.setParameter("label", bookingRequest.getSeatLabels());
+            query.setParameter("labels", bookingRequest.getSeatLabels());
+
+            System.out.println("%%%%%%%%%%%%%%%%%%%%%%%%% Booking request %%%%%%%%%%%%%%%%%%%%%%%%%%");
+            System.out.println(bookingRequest.getDate());
+            System.out.println(bookingRequest.getSeatLabels());
+            System.out.println("%%%%%%%%%%%%%%%%%%%%%%%%% Booking request %%%%%%%%%%%%%%%%%%%%%%%%%%");
 
             List<Seat> seats = query.getResultList();
 
             if (seats.isEmpty()) {
+                System.out.println("%%%%%%%%%%%%%%%%%%%%%%%%% No seats found %%%%%%%%%%%%%%%%%%%%%%%%%%");
                 return Response.status(Response.Status.BAD_REQUEST).build();
             }
 
             for (Seat seat : seats) {
                 if (seat.getIsBooked()) {
+                    System.out.println("%%%%%%%%%%%%%%%%%%%%%%%%% Seat is already booked %%%%%%%%%%%%%%%%%%%%%%%%%%");
                     return Response.status(Response.Status.FORBIDDEN).build();
                 }
-    
+                System.out.println("%%%%%%%%%%%%%%%%%%%%%%%%% Booking seat %%%%%%%%%%%%%%%%%%%%%%%%%%");
                 seat.setIsBooked(true);
             }
 
-            em.getTransaction().commit();
+            transaction.commit();
             return Response.status(Response.Status.CREATED).build();
-    
-        } catch (Exception e) {
-            return Response.status(404).build();
+
+        } catch (PersistenceException e) {
+            System.out.println("%%%%%%%%%%%%%%%%%%%%%%%%% UGH %%%%%%%%%%%%%%%%%%%%%%%%%%");
+            if (transaction.isActive()) {
+                transaction.rollback();
+            }
+            e.printStackTrace();
+            System.out.println("%%%%%%%%%%%%%%%%%%%%%%%%% UGH 500 %%%%%%%%%%%%%%%%%%%%%%%%%%");
+            return Response.status(500).build();
         } finally {
             em.close();
         }
     }
-
 
     @POST
     @Path("/login")
@@ -242,7 +290,7 @@ public class ConcertResource {
     public Response authenticateUser(UserDTO credentials) {
         try {
             boolean loggedIn = authenticate(credentials.getUsername(), credentials.getPassword());
-    
+
             if (!loggedIn) {
                 return Response.status(Response.Status.UNAUTHORIZED).build();
 
@@ -250,48 +298,48 @@ public class ConcertResource {
                 NewCookie token = makeCookie(credentials.getUsername());
                 return Response.ok().cookie(token).build();
             }
-    
-        } catch (Exception e) {
+
+        } catch (PersistenceException e) {
             e.printStackTrace();
-            return Response.status(Response.Status.UNAUTHORIZED).build();
+            return Response.status(500).build();
         }
     }
-    
-        private boolean authenticate(String username, String password) {
 
-            EntityManager em = PersistenceManager.instance().createEntityManager();
+    private boolean authenticate(String username, String password) {
 
-            try {
-                TypedQuery<User> query = em.createQuery("SELECT u FROM User u WHERE u.username = :username", User.class);
-                query.setParameter("username", username);
-                User user = query.getSingleResult();
+        EntityManager em = PersistenceManager.instance().createEntityManager();
 
-                if(user == null) {
-                    return false;
-                }
-                if(!user.getPassword().equals(password)) {
-                    return false;
-                }
-                return true;
+        try {
+            TypedQuery<User> query = em.createQuery("SELECT u FROM User u WHERE u.username = :username", User.class);
+            query.setParameter("username", username);
+            User user = query.getSingleResult();
 
-            } catch (NoResultException nre) {
+            if (user == null) {
                 return false;
-
-            } finally {
-                em.close();
-
             }
-        }
+            if (!user.getPassword().equals(password)) {
+                return false;
+            }
+            return true;
 
-        private NewCookie makeCookie(String clientId) {
-            String id = clientId != null ? clientId : UUID.randomUUID().toString();
-            NewCookie newCookie = new NewCookie("auth", id);
-            return newCookie;
+        } catch (NoResultException nre) {
+            return false;
+
+        } catch (PersistenceException e) {
+            System.out.println("%%%%%%%%%%%%%%%%%%%%%%%% UGH %%%%%%%%%%%%%%%%%%%%%%%%%%%%%");
+            e.printStackTrace();
+            return false;
+
+        } finally {
+            em.close();
+
         }
- 
-        
+    }
+
+    private NewCookie makeCookie(String clientId) {
+        String id = clientId != null ? clientId : "default-client-id";
+        NewCookie newCookie = new NewCookie("auth", id);
+        return newCookie;
+    }
 
 }
-
-
-
