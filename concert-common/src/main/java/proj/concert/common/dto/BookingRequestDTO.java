@@ -12,9 +12,9 @@ import proj.concert.common.jackson.LocalDateTimeSerializer;
 
 /**
  * Represents a request to make a booking.
- * concertId the id of the concert to be booked
- * date the date on which that concert is to be booked
- * seats the seats which are requested for that concert on that date
+ * concertId   the id of the concert to be booked
+ * date        the date on which that concert is to be booked
+ * seats       the seats which are requested for that concert on that date
  */
 public class BookingRequestDTO {
 
@@ -25,8 +25,7 @@ public class BookingRequestDTO {
     private LocalDateTime date;
     private List<String> seatLabels = new ArrayList<>();
 
-    public BookingRequestDTO() {
-    }
+    public BookingRequestDTO(){}
 
     public BookingRequestDTO(long concertId, LocalDateTime date) {
         this.concertId = concertId;

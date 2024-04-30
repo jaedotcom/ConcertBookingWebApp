@@ -14,12 +14,13 @@ import proj.concert.common.jackson.LocalDateTimeSerializer;
  * DTO class to represent concerts.
  * <p>
  * A ConcertDTO describes a concert in terms of
- * id           the unique identifier for a concert.
- * title        the concert's title.
- * dates        the concert's scheduled dates and times (represented as a Set of LocalDateTime instances).
- * imageName    an image name for the concert.
- * performers   the performers in the concert
- * blurb        the concert's description
+ * id the unique identifier for a concert.
+ * title the concert's title.
+ * dates the concert's scheduled dates and times (represented as a Set of
+ * LocalDateTime instances).
+ * imageName an image name for the concert.
+ * performers the performers in the concert
+ * blurb the concert's description
  */
 public class ConcertDTO {
 
@@ -27,7 +28,7 @@ public class ConcertDTO {
     private String title;
     private String imageName;
     private String blrb;
-    private List<LocalDateTime> dates = new ArrayList<LocalDateTime>();
+    private List<LocalDateTime> dates = new ArrayList<>();
     private List<PerformerDTO> performers = new ArrayList<>();
 
     public ConcertDTO() {
