@@ -246,17 +246,12 @@ public class ConcertResource {
     @Path("/bookings")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getAllBookings(@Context HttpHeaders headers, @CookieParam("auth") NewCookie clientId) {
+    public Response retrieveBookings(@Context HttpHeaders headers, @CookieParam("auth") NewCookie clientId) {
         if (clientId == null) {
-            // If not authenticated, return a 401 status code
-            System.out.println("%%%%%%%%%%%%%%%%%%%%%%%%% Not authenticated %%%%%%%%%%%%%%%%%%%%%%%%%%");
-
             return Response.status(Response.Status.UNAUTHORIZED).build();
         }
 
         String username = clientId.getName();
-
-        System.out.println("%%%%%%%%%%%%%%%%%%%%%%%%% Authenticated %%%%%%%%%%%%%%%%%%%%%%%%%%");
 
         EntityManager em = PersistenceManager.instance().createEntityManager();
         try {
@@ -275,8 +270,6 @@ public class ConcertResource {
             TypedQuery<Booking> query = em.createQuery("select b from Booking b where b.user=:user", Booking.class);
             query.setParameter("user", user);
             List<Booking> bookings = query.getResultList();
-            System.out.println("%%%%%%%%%%%%%%%%%%%%%%%%% Bookings %%%%%%%%%%%%%%%%%%%%%%%%%%");
-            System.out.println(bookings);
 
             List<BookingDTO> bookingDtos = new ArrayList<BookingDTO>();
             for (Booking booking : bookings) {
@@ -285,7 +278,6 @@ public class ConcertResource {
 
             return Response.ok(bookingDtos).build();
         } catch (PersistenceException e) {
-            System.out.println("%%%%%%%%%%%%%%%%%%%%%%%%% UGH bookings 500 %%%%%%%%%%%%%%%%%%%%%%%%%%");
             e.printStackTrace();
             return Response.status(500).build();
         } finally {
@@ -297,7 +289,7 @@ public class ConcertResource {
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response makeBooking(@Context UriInfo uriInfo, BookingRequestDTO bookingRequest,
+    public Response createBooking(@Context UriInfo uriInfo, BookingRequestDTO bookingRequest,
             @CookieParam("auth") NewCookie clientId) {
 
         if (clientId == null)
@@ -320,27 +312,20 @@ public class ConcertResource {
                     Seat.class);
             query.setParameter("date", concertDate);
             query.setParameter("labels", bookingRequest.getSeatLabels());
-            System.out.println("%%%%%%%%%%%%%%%%%%%%%%%%% Booking request %%%%%%%%%%%%%%%%%%%%%%%%%%");
-            System.out.println(bookingRequest.getDate());
-            System.out.println(bookingRequest.getSeatLabels());
-            System.out.println("%%%%%%%%%%%%%%%%%%%%%%%%% Booking request %%%%%%%%%%%%%%%%%%%%%%%%%%");
 
             List<Seat> seats = query.getResultList();
 
             if (seats.isEmpty()) {
-                System.out.println("%%%%%%%%%%%%%%%%%%%%%%%%% No seats found %%%%%%%%%%%%%%%%%%%%%%%%%%");
                 return Response.status(Response.Status.BAD_REQUEST).build();
             }
 
             for (Seat seat : seats) {
                 if (seat.getIsBooked()) {
-                    System.out.println("%%%%%%%%%%%%%%%%%%%%%%%%% Seat is already booked %%%%%%%%%%%%%%%%%%%%%%%%%%");
                     return Response.status(Response.Status.FORBIDDEN).build();
                 }
             }
 
             for (Seat seat : seats) {
-                System.out.println("%%%%%%%%%%%%%%%%%%%%%%%%% Booking seat %%%%%%%%%%%%%%%%%%%%%%%%%%");
                 seat.setIsBooked(true);
             }
 
@@ -348,91 +333,27 @@ public class ConcertResource {
             for (Seat x : seats)
                 seatsSet.add(x);
 
-            System.out.println("Created HashSet is");
-
-            TypedQuery<User> query3 = em.createQuery("SELECT u FROM User u WHERE u.username = :username", User.class);
-            query3.setParameter("username", username);
-            User user = query3.getSingleResult();
+            TypedQuery<User> getUserQuery = em.createQuery("SELECT u FROM User u WHERE u.username = :username",
+                    User.class);
+            getUserQuery.setParameter("username", username);
+            User user = getUserQuery.getSingleResult();
             Booking booking = new Booking(user, em.find(Concert.class, bookingRequest.getConcertId()), concertDate,
                     seatsSet);
             em.persist(booking);
 
             transaction.commit();
-            System.out.println(URI.create("./bookings/" + booking.getBookingId()));
-            System.out.println(uriInfo.getRequestUri());
-            System.out.println(uriInfo.getBaseUri());
+
             return Response.created(URI.create(uriInfo.getRequestUri() + "/" + booking.getBookingId())).build();
 
         } catch (PersistenceException e) {
-            System.out.println("%%%%%%%%%%%%%%%%%%%%%%%%% UGH %%%%%%%%%%%%%%%%%%%%%%%%%%");
             if (transaction.isActive()) {
                 transaction.rollback();
             }
             e.printStackTrace();
-            System.out.println("%%%%%%%%%%%%%%%%%%%%%%%%% UGH 500 %%%%%%%%%%%%%%%%%%%%%%%%%%");
             return Response.status(500).build();
         } finally {
             em.close();
         }
-    }
-
-    @POST
-    @Path("/login")
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response authenticateUser(UserDTO credentials) {
-        try {
-            boolean loggedIn = authenticate(credentials.getUsername(), credentials.getPassword());
-
-            if (!loggedIn) {
-                return Response.status(Response.Status.UNAUTHORIZED).build();
-
-            } else {
-                NewCookie token = makeCookie(credentials.getUsername());
-                return Response.ok().cookie(token).build();
-            }
-
-        } catch (PersistenceException e) {
-            e.printStackTrace();
-            return Response.status(500).build();
-        }
-    }
-
-    private boolean authenticate(String username, String password) {
-
-        EntityManager em = PersistenceManager.instance().createEntityManager();
-
-        try {
-            TypedQuery<User> query = em.createQuery("SELECT u FROM User u WHERE u.username = :username", User.class);
-            query.setParameter("username", username);
-            User user = query.getSingleResult();
-
-            if (user == null) {
-                return false;
-            }
-            if (!user.getPassword().equals(password)) {
-                return false;
-            }
-            return true;
-
-        } catch (NoResultException nre) {
-            return false;
-
-        } catch (PersistenceException e) {
-            System.out.println("%%%%%%%%%%%%%%%%%%%%%%%% UGH %%%%%%%%%%%%%%%%%%%%%%%%%%%%%");
-            e.printStackTrace();
-            return false;
-
-        } finally {
-            em.close();
-
-        }
-    }
-
-    private NewCookie makeCookie(String clientId) {
-        String id = clientId != null ? clientId : "default-client-id";
-        NewCookie newCookie = new NewCookie("auth", id);
-        return newCookie;
     }
 
     @Path("/subscribe/concertInfo")
@@ -495,5 +416,63 @@ public class ConcertResource {
             emForThread.close();
         });
 
+    }
+
+    @POST
+    @Path("/login")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response login(UserDTO credentials) {
+        try {
+            boolean loggedIn = authenticate(credentials.getUsername(), credentials.getPassword());
+
+            if (!loggedIn) {
+                return Response.status(Response.Status.UNAUTHORIZED).build();
+
+            } else {
+                NewCookie token = makeCookie(credentials.getUsername());
+                return Response.ok().cookie(token).build();
+            }
+
+        } catch (PersistenceException e) {
+            e.printStackTrace();
+            return Response.status(500).build();
+        }
+    }
+
+    private boolean authenticate(String username, String password) {
+
+        EntityManager em = PersistenceManager.instance().createEntityManager();
+
+        try {
+            TypedQuery<User> query = em.createQuery("SELECT u FROM User u WHERE u.username = :username", User.class);
+            query.setParameter("username", username);
+            User user = query.getSingleResult();
+
+            if (user == null) {
+                return false;
+            }
+            if (!user.getPassword().equals(password)) {
+                return false;
+            }
+            return true;
+
+        } catch (NoResultException nre) {
+            return false;
+
+        } catch (PersistenceException e) {
+            e.printStackTrace();
+            return false;
+
+        } finally {
+            em.close();
+
+        }
+    }
+
+    private NewCookie makeCookie(String clientId) {
+        String id = clientId != null ? clientId : "default-client-id";
+        NewCookie newCookie = new NewCookie("auth", id);
+        return newCookie;
     }
 }
