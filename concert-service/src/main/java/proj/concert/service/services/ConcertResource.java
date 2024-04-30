@@ -260,6 +260,10 @@ public class ConcertResource {
         try {
             transaction.begin();
             LocalDateTime concertDate = bookingRequest.getDate();
+
+            Concert concert = em.find(Concert.class, bookingRequest.getConcertId());
+            if (concert == null) { return Response.status(Response.Status.BAD_REQUEST).build();}
+
             TypedQuery<Seat> query = em.createQuery("select s from Seat s where s.date = :date and s.label IN :labels",
                     Seat.class);
             query.setParameter("date", concertDate);
@@ -270,7 +274,7 @@ public class ConcertResource {
             System.out.println("%%%%%%%%%%%%%%%%%%%%%%%%% Booking request %%%%%%%%%%%%%%%%%%%%%%%%%%");
 
             List<Seat> seats = query.getResultList();
-
+            
             if (seats.isEmpty()) {
                 System.out.println("%%%%%%%%%%%%%%%%%%%%%%%%% No seats found %%%%%%%%%%%%%%%%%%%%%%%%%%");
                 return Response.status(Response.Status.BAD_REQUEST).build();
