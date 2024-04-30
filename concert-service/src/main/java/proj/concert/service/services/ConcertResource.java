@@ -1,8 +1,11 @@
 package proj.concert.service.services;
 
+import java.net.URI;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -244,17 +247,23 @@ public class ConcertResource {
     @Path("/bookings")
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
-    public Response makeBooking(BookingRequestDTO bookingRequest) {
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response makeBooking(BookingRequestDTO bookingRequest, @CookieParam("auth") NewCookie clientId) {
+
+        if (clientId == null)
+            return Response.status(401).build();
+
+        String username = clientId.getName();
 
         EntityManager em = PersistenceManager.instance().createEntityManager();
         EntityTransaction transaction = em.getTransaction();
         try {
             transaction.begin();
+            LocalDateTime concertDate = bookingRequest.getDate();
             TypedQuery<Seat> query = em.createQuery("select s from Seat s where s.date = :date and s.label IN :labels",
                     Seat.class);
-            query.setParameter("date", bookingRequest.getDate());
+            query.setParameter("date", concertDate);
             query.setParameter("labels", bookingRequest.getSeatLabels());
-
             System.out.println("%%%%%%%%%%%%%%%%%%%%%%%%% Booking request %%%%%%%%%%%%%%%%%%%%%%%%%%");
             System.out.println(bookingRequest.getDate());
             System.out.println(bookingRequest.getSeatLabels());
@@ -272,12 +281,29 @@ public class ConcertResource {
                     System.out.println("%%%%%%%%%%%%%%%%%%%%%%%%% Seat is already booked %%%%%%%%%%%%%%%%%%%%%%%%%%");
                     return Response.status(Response.Status.FORBIDDEN).build();
                 }
+            }
+
+            for (Seat seat : seats) {
                 System.out.println("%%%%%%%%%%%%%%%%%%%%%%%%% Booking seat %%%%%%%%%%%%%%%%%%%%%%%%%%");
                 seat.setIsBooked(true);
             }
 
+            Set<Seat> seatsSet = new HashSet<Seat>();
+            for (Seat x : seats)
+                seatsSet.add(x);
+
+            System.out.println("Created HashSet is");
+
+            TypedQuery<User> query3 = em.createQuery("SELECT u FROM User u WHERE u.username = :username", User.class);
+            query3.setParameter("username", username);
+            User user = query3.getSingleResult();
+            Booking booking = new Booking(user, em.find(Concert.class, bookingRequest.getConcertId()), concertDate,
+                    seatsSet);
+            em.persist(booking);
+
             transaction.commit();
-            return Response.status(Response.Status.CREATED).build();
+
+            return Response.created(URI.create("/bookings/" + booking.getBookingId())).build();
 
         } catch (PersistenceException e) {
             System.out.println("%%%%%%%%%%%%%%%%%%%%%%%%% UGH %%%%%%%%%%%%%%%%%%%%%%%%%%");

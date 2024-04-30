@@ -49,6 +49,10 @@ public class Booking {
         this.seats = seats;
     }
 
+    public long getBookingId() {
+        return bookingId;
+    }
+
     public Concert getConcert() {
         return concert;
     }
