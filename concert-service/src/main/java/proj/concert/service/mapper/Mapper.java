@@ -7,9 +7,11 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import proj.concert.common.dto.BookingDTO;
 import proj.concert.common.dto.ConcertDTO;
 import proj.concert.common.dto.PerformerDTO;
 import proj.concert.common.dto.SeatDTO;
+import proj.concert.service.domain.Booking;
 import proj.concert.service.domain.Concert;
 import proj.concert.service.domain.Performer;
 import proj.concert.service.domain.Seat;
@@ -72,9 +74,15 @@ public class Mapper {
     // Add version stuff once learnt :)
     public static SeatDTO toDto(Seat seat) {
         SeatDTO dtoSeat = new SeatDTO(
-            seat.getLabel(), seat.getPrice());
+                seat.getLabel(), seat.getPrice());
 
         return dtoSeat;
+    }
+
+    public static BookingDTO tDto(Booking booking) {
+        List<SeatDTO> seatDtos = booking.getSeats().stream().map(seat -> toDto(seat)).collect(Collectors.toList());
+        BookingDTO dtoBooking = new BookingDTO(booking.getBookingId(), booking.getDate(), seatDtos);
+        return dtoBooking;
     }
 
 }

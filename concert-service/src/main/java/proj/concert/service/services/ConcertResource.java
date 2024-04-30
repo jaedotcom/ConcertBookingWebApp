@@ -34,6 +34,7 @@ import javax.ws.rs.core.Response;
 import proj.concert.service.mapper.Mapper;
 import proj.concert.common.dto.ConcertSummaryDTO;
 import proj.concert.common.dto.PerformerDTO;
+import proj.concert.common.dto.BookingDTO;
 import proj.concert.common.dto.BookingRequestDTO;
 import proj.concert.common.dto.ConcertDTO;
 import proj.concert.service.domain.Booking;
@@ -45,8 +46,6 @@ import proj.concert.common.dto.SeatDTO;
 import proj.concert.common.dto.UserDTO;
 import proj.concert.service.domain.Seat;
 import proj.concert.service.domain.User;
-
-import java.util.UUID;
 
 @Path("/concert-service")
 public class ConcertResource {
@@ -200,26 +199,44 @@ public class ConcertResource {
     @Path("/bookings")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getAllBookings(@Context HttpHeaders headers) {
-
-        String authHeader = headers.getHeaderString(HttpHeaders.AUTHORIZATION);
-        if (authHeader == null || !isAuthenticated(authHeader)) {
+    public Response getAllBookings(@Context HttpHeaders headers, @CookieParam("auth") NewCookie clientId) {
+        if (clientId == null) {
             // If not authenticated, return a 401 status code
             System.out.println("%%%%%%%%%%%%%%%%%%%%%%%%% Not authenticated %%%%%%%%%%%%%%%%%%%%%%%%%%");
 
             return Response.status(Response.Status.UNAUTHORIZED).build();
         }
 
+        String username = clientId.getName();
+
         System.out.println("%%%%%%%%%%%%%%%%%%%%%%%%% Authenticated %%%%%%%%%%%%%%%%%%%%%%%%%%");
 
         EntityManager em = PersistenceManager.instance().createEntityManager();
         try {
-            TypedQuery<Booking> query = em.createQuery("select b from Booking b", Booking.class);
+
+            TypedQuery<User> query3 = em.createQuery("SELECT u FROM User u WHERE u.username = :username", User.class);
+            query3.setParameter("username", username);
+            User user;
+            try {
+
+                user = query3.getSingleResult();
+            } catch (NoResultException e) {
+                return Response.status(Response.Status.UNAUTHORIZED).build();
+
+            }
+
+            TypedQuery<Booking> query = em.createQuery("select b from Booking b where b.user=:user", Booking.class);
+            query.setParameter("user", user);
             List<Booking> bookings = query.getResultList();
             System.out.println("%%%%%%%%%%%%%%%%%%%%%%%%% Bookings %%%%%%%%%%%%%%%%%%%%%%%%%%");
             System.out.println(bookings);
 
-            return Response.ok(bookings).build();
+            List<BookingDTO> bookingDtos = new ArrayList<BookingDTO>();
+            for (Booking booking : bookings) {
+                bookingDtos.add(Mapper.tDto(booking));
+            }
+
+            return Response.ok(bookingDtos).build();
         } catch (PersistenceException e) {
             System.out.println("%%%%%%%%%%%%%%%%%%%%%%%%% UGH bookings 500 %%%%%%%%%%%%%%%%%%%%%%%%%%");
             e.printStackTrace();
@@ -227,21 +244,6 @@ public class ConcertResource {
         } finally {
             em.close();
         }
-    }
-
-    private boolean isAuthenticated(String authHeader) {
-        // Split the authHeader into username + password
-        System.out.println("%%%%%%%%%%%%%%%%%%%%%%%%% Auth header %%%%%%%%%%%%%%%%%%%%%%%%%%");
-        String[] credentials = authHeader.split(":");
-        if (credentials.length != 2) {
-            System.out.println("%%%%%%%%%%%%%%%%%%%%%%%%% DENIED@!!@ %%%%%%%%%%%%%%%%%%%%%%%%%%");
-            return false;
-        }
-
-        String username = credentials[0];
-        String password = credentials[1];
-
-        return authenticate(username, password);
     }
 
     @Path("/bookings")
@@ -262,7 +264,9 @@ public class ConcertResource {
             LocalDateTime concertDate = bookingRequest.getDate();
 
             Concert concert = em.find(Concert.class, bookingRequest.getConcertId());
-            if (concert == null) { return Response.status(Response.Status.BAD_REQUEST).build();}
+            if (concert == null) {
+                return Response.status(Response.Status.BAD_REQUEST).build();
+            }
 
             TypedQuery<Seat> query = em.createQuery("select s from Seat s where s.date = :date and s.label IN :labels",
                     Seat.class);
@@ -274,7 +278,7 @@ public class ConcertResource {
             System.out.println("%%%%%%%%%%%%%%%%%%%%%%%%% Booking request %%%%%%%%%%%%%%%%%%%%%%%%%%");
 
             List<Seat> seats = query.getResultList();
-            
+
             if (seats.isEmpty()) {
                 System.out.println("%%%%%%%%%%%%%%%%%%%%%%%%% No seats found %%%%%%%%%%%%%%%%%%%%%%%%%%");
                 return Response.status(Response.Status.BAD_REQUEST).build();
