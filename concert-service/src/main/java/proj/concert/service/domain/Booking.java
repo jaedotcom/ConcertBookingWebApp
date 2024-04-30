@@ -76,4 +76,8 @@ public class Booking {
     public void setSeats(Set<Seat> seats) {
         this.seats = seats;
     }
+
+    public User getUser() {
+        return user;
+    }
 }

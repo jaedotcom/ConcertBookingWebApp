@@ -30,6 +30,7 @@ import javax.ws.rs.container.Suspended;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.NewCookie;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriInfo;
 
 import proj.concert.service.mapper.Mapper;
 import proj.concert.common.dto.ConcertSummaryDTO;
@@ -196,6 +197,52 @@ public class ConcertResource {
         return Response.ok(seatsDto).build();
     }
 
+    @GET
+    @Path("/bookings/{id}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response retrieveBooking(@PathParam(value = "id") long bookingId, @CookieParam("auth") NewCookie clientId) {
+        if (clientId == null) {
+            return Response.status(Response.Status.UNAUTHORIZED).build();
+        }
+
+        String username = clientId.getName();
+
+        EntityManager em = PersistenceManager.instance().createEntityManager();
+        BookingDTO bookingDto = null;
+
+        try {
+            TypedQuery<User> getUserQuery = em.createQuery("SELECT u FROM User u WHERE u.username = :username",
+                    User.class);
+            getUserQuery.setParameter("username", username);
+            User user;
+            try {
+                user = getUserQuery.getSingleResult();
+            } catch (NoResultException e) {
+                return Response.status(Response.Status.UNAUTHORIZED).build();
+
+            }
+
+            TypedQuery<Booking> getBookingQuery = em.createQuery(
+                    "select b from Booking b where b.bookingId=:bookingId", Booking.class);
+            // getBookingQuery.setParameter("user", user);
+            getBookingQuery.setParameter("bookingId", bookingId);
+            Booking booking = getBookingQuery.getSingleResult();
+
+            if (booking.getUser() != user) {
+                return Response.status(403).build();
+            }
+
+            bookingDto = Mapper.tDto(booking);
+        } catch (Exception e) {
+            return Response.status(404).build();
+        } finally {
+            em.close();
+        }
+
+        return Response.ok(bookingDto).build();
+
+    }
+
     @Path("/bookings")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
@@ -250,7 +297,8 @@ public class ConcertResource {
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response makeBooking(BookingRequestDTO bookingRequest, @CookieParam("auth") NewCookie clientId) {
+    public Response makeBooking(@Context UriInfo uriInfo, BookingRequestDTO bookingRequest,
+            @CookieParam("auth") NewCookie clientId) {
 
         if (clientId == null)
             return Response.status(401).build();
@@ -310,8 +358,10 @@ public class ConcertResource {
             em.persist(booking);
 
             transaction.commit();
-
-            return Response.created(URI.create("/bookings/" + booking.getBookingId())).build();
+            System.out.println(URI.create("./bookings/" + booking.getBookingId()));
+            System.out.println(uriInfo.getRequestUri());
+            System.out.println(uriInfo.getBaseUri());
+            return Response.created(URI.create(uriInfo.getRequestUri() + "/" + booking.getBookingId())).build();
 
         } catch (PersistenceException e) {
             System.out.println("%%%%%%%%%%%%%%%%%%%%%%%%% UGH %%%%%%%%%%%%%%%%%%%%%%%%%%");
