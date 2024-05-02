@@ -12,6 +12,8 @@ import javax.persistence.JoinColumn;
 import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
 import javax.persistence.OneToOne;
+import javax.persistence.FetchType;
+import javax.persistence.CascadeType;
 
 /**
  * Represents a completed booking.
@@ -19,23 +21,24 @@ import javax.persistence.OneToOne;
  * date the date on which that concert was booked
  * seats the seats which were booked for that concert on that date
  */
+
 @Entity
 public class Booking {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long bookingId;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
     @JoinColumn(name = "user_username")
     private User user;
 
-    @OneToOne
+    @OneToOne(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
     @JoinColumn(name = "concert_id")
     private Concert concert;
 
     private LocalDateTime date; // must be a valid concert date
 
-    @ManyToMany
+    @ManyToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JoinColumn(name = "seat_label")
     private Set<Seat> seats = new TreeSet<Seat>();
 

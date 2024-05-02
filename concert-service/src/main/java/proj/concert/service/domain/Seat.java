@@ -3,9 +3,13 @@ package proj.concert.service.domain;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Set;
 
 import javax.persistence.Entity;
+import javax.persistence.FetchType;
 import javax.persistence.Id;
+import javax.persistence.ManyToMany;
+import javax.persistence.CascadeType;
 
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
@@ -27,6 +31,9 @@ public class Seat implements Serializable {
 	private LocalDateTime date;
 	private BigDecimal price;
 	private boolean isBooked = false;
+
+	@ManyToMany(mappedBy = "seats", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+	private Set<Booking> bookings;
 
 	public Seat() {
 	}
