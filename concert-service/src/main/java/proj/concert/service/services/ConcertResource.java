@@ -67,6 +67,8 @@ public class ConcertResource {
             for (Concert concert : query.getResultList()) {
                 summaries.add(new ConcertSummaryDTO(concert.getId(), concert.getTitle(), concert.getImageName()));
             }
+        } catch (Exception e) {
+            return Response.status(404).build();
         } finally {
             em.close();
         }
