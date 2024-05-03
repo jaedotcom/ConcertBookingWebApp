@@ -5,7 +5,6 @@ import org.slf4j.LoggerFactory;
 
 import proj.concert.service.domain.Concert;
 import proj.concert.service.domain.Seat;
-import proj.concert.service.services.ConcertApplication;
 import proj.concert.service.services.PersistenceManager;
 
 import javax.persistence.EntityManager;

@@ -3,6 +3,12 @@ package proj.concert.common.dto;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
+import proj.concert.common.jackson.LocalDateTimeDeserializer;
+import proj.concert.common.jackson.LocalDateTimeSerializer;
+
 import java.time.LocalDateTime;
 
 /**
@@ -16,7 +22,11 @@ import java.time.LocalDateTime;
 public class ConcertInfoSubscriptionDTO {
 
     private long concertId;
+
+    @JsonDeserialize(using = LocalDateTimeDeserializer.class)
+    @JsonSerialize(using = LocalDateTimeSerializer.class)
     private LocalDateTime date;
+
     private int percentageBooked;
 
     public ConcertInfoSubscriptionDTO() {

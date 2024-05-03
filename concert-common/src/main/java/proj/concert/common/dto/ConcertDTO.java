@@ -4,16 +4,23 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
+import proj.concert.common.jackson.LocalDateTimeDeserializer;
+import proj.concert.common.jackson.LocalDateTimeSerializer;
+
 /**
  * DTO class to represent concerts.
  * <p>
  * A ConcertDTO describes a concert in terms of
- * id           the unique identifier for a concert.
- * title        the concert's title.
- * dates        the concert's scheduled dates and times (represented as a Set of LocalDateTime instances).
- * imageName    an image name for the concert.
- * performers   the performers in the concert
- * blurb        the concert's description
+ * id the unique identifier for a concert.
+ * title the concert's title.
+ * dates the concert's scheduled dates and times (represented as a Set of
+ * LocalDateTime instances).
+ * imageName an image name for the concert.
+ * performers the performers in the concert
+ * blurb the concert's description
  */
 public class ConcertDTO {
 
@@ -71,6 +78,8 @@ public class ConcertDTO {
         this.blrb = blrb;
     }
 
+    @JsonSerialize(contentUsing = LocalDateTimeSerializer.class)
+    @JsonDeserialize(contentUsing = LocalDateTimeDeserializer.class)
     public List<LocalDateTime> getDates() {
         return dates;
     }

@@ -45,8 +45,7 @@ public class TheatreLayout {
                 String seatLabel = "" + rowLabel + seatNum;
 
                 seats.add(new Seat(
-                        seatLabel, false, date, currentPricing.price
-                ));
+                        seatLabel, date, currentPricing.price));
             }
 
             rowsCreatedThisPricingBand++;
