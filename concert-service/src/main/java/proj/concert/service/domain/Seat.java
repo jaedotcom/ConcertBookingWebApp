@@ -9,6 +9,7 @@ import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.Id;
 import javax.persistence.ManyToMany;
+import javax.persistence.Version;
 import javax.persistence.CascadeType;
 
 import org.apache.commons.lang3.builder.EqualsBuilder;
@@ -31,6 +32,8 @@ public class Seat implements Serializable {
 	private LocalDateTime date;
 	private BigDecimal price;
 	private boolean isBooked = false;
+	@Version
+	private int version;
 
 	@ManyToMany(mappedBy = "seats", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
 	private Set<Booking> bookings;
@@ -74,6 +77,14 @@ public class Seat implements Serializable {
 
 	public void setIsBooked(boolean isBooked) {
 		this.isBooked = isBooked;
+	}
+
+	public int getVersion(){
+		return this.version;
+	}
+
+	public void setVersion(int newVersion){
+		this.version = newVersion;
 	}
 
 	@Override
