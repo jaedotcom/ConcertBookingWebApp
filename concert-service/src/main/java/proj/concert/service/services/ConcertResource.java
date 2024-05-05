@@ -49,10 +49,13 @@ import proj.concert.common.dto.UserDTO;
 import proj.concert.service.domain.Seat;
 import proj.concert.service.domain.User;
 
+
+// Class ConcertResource holds all functions to do with the concert services
 @Path("/concert-service")
 public class ConcertResource {
     ExecutorService threadPool = Executors.newCachedThreadPool();
 
+    // Function that retrieves summaries for each concert and returns a 200 response code and a 404 error if any Exceptions occur
     @GET
     @Path("/concerts/summaries")
     @Produces(MediaType.APPLICATION_JSON)
@@ -65,7 +68,8 @@ public class ConcertResource {
             for (Concert concert : query.getResultList()) {
                 summaries.add(new ConcertSummaryDTO(concert.getId(), concert.getTitle(), concert.getImageName()));
             }
-
+        } catch (Exception e) {
+            return Response.status(404).build();
         } finally {
             em.close();
         }
@@ -73,6 +77,7 @@ public class ConcertResource {
         return Response.ok(summaries).build();
     }
 
+    // Function that retrieves a concert from an Id and returns a 200 response if found and a 404 error if any Exceptions occur
     @GET
     @Path("/concerts/{id}")
     @Produces(MediaType.APPLICATION_JSON)
@@ -94,6 +99,7 @@ public class ConcertResource {
 
     }
 
+    // Function that retrieves the list of concerts and returns a 200 response and a 404 error if any Exceptions occur
     @GET
     @Path("/concerts")
     @Produces(MediaType.APPLICATION_JSON)
@@ -116,6 +122,7 @@ public class ConcertResource {
         return Response.ok(concertsDto).build();
     }
 
+    // Function that retrieves a performer from an Id and returns a 200 response if found and a 404 error if any Exceptions occur
     @GET
     @Path("/performers/{id}")
     @Produces(MediaType.APPLICATION_JSON)
@@ -137,6 +144,7 @@ public class ConcertResource {
 
     }
 
+    // Function that retrieves the list of performers and returns a 200 response and a 404 error if any Exceptions occur
     @GET
     @Path("/performers")
     @Produces(MediaType.APPLICATION_JSON)
@@ -160,6 +168,8 @@ public class ConcertResource {
 
     }
 
+    // Function that retrieves the list of seast based on a given date and given status (Any, Booked, Unbooked)
+    // Will return a 200 response and a 404 error if any Exceptions occur
     @GET
     @Path("/seats/{date}")
     @Produces(MediaType.APPLICATION_JSON)
@@ -198,6 +208,8 @@ public class ConcertResource {
         return Response.ok(seatsDto).build();
     }
 
+    // Function that retrieves a booking from an Id returns a 200 response and a 404 error if any Exceptions occur
+    // If user if unauthroized throw a 401 error
     @GET
     @Path("/bookings/{id}")
     @Produces(MediaType.APPLICATION_JSON)
@@ -244,6 +256,8 @@ public class ConcertResource {
 
     }
 
+    // Function that retrieves the list of bookings and returns a 200 response and a 500 error if any Exceptions occur
+    // If user if unauthroized throw a 401 error
     @Path("/bookings")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
@@ -286,6 +300,8 @@ public class ConcertResource {
         }
     }
 
+    // Function that creates a booking, will return 500 response for any errors and a 200 response upon creation
+    // If user if unauthroized throw a 401 error
     @Path("/bookings")
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
@@ -359,6 +375,8 @@ public class ConcertResource {
         }
     }
 
+    // Function that subscribes and returns a 200 response and a 400 error if any Exceptions occur
+    // If user if unauthroized throw a 401 error
     @Path("/subscribe/concertInfo")
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
@@ -421,6 +439,8 @@ public class ConcertResource {
 
     }
 
+    // Function that logs a user in and returns a 200 response and a 500 error if any Exceptions occur    
+    // Will return 401 for incorrect login (unauthorized)
     @POST
     @Path("/login")
     @Consumes(MediaType.APPLICATION_JSON)
@@ -443,6 +463,7 @@ public class ConcertResource {
         }
     }
 
+    // Authentication process that returns true or false
     private boolean authenticate(String username, String password) {
 
         EntityManager em = PersistenceManager.instance().createEntityManager();
@@ -473,6 +494,7 @@ public class ConcertResource {
         }
     }
 
+    // Function that creates a new cookie
     private NewCookie makeCookie(String clientId) {
         String id = clientId != null ? clientId : "default-client-id";
         NewCookie newCookie = new NewCookie("auth", id);
