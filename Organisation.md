@@ -75,22 +75,6 @@ In both cases, the EntityManager is closed to free up resources, ensuring the da
 
 We also used @Version annotation in our Seat class, it would definitely help in handling concurrency issues. 💅🏻
 
-```
-@Entity
-public class Seat implements Serializable {
-    @EmbeddedId
-    private SeatKey id;
-    private BigDecimal price;
-    private boolean isBooked = false;
-    @Version
-    private int version;
-
-    @ManyToMany(mappedBy = "seats", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    private Set<Booking> bookings;
-...
-
-```
-
 
 #### should `Seat.java` include `isBooked` and `date`?
 
