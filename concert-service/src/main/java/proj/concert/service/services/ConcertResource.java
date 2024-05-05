@@ -11,6 +11,7 @@ import java.util.concurrent.Executors;
 
 import javax.persistence.EntityManager;
 import javax.persistence.EntityTransaction;
+import javax.persistence.LockModeType;
 import javax.persistence.NoResultException;
 import javax.persistence.PersistenceException;
 import javax.persistence.TypedQuery;
@@ -328,6 +329,8 @@ public class ConcertResource {
                     Seat.class);
             query.setParameter("date", concertDate);
             query.setParameter("labels", bookingRequest.getSeatLabels());
+            // Set OPTIMISTIC_FORCE_INCREMENT for seats to increment Version
+            query.setLockMode(LockModeType.OPTIMISTIC_FORCE_INCREMENT);
 
             List<Seat> seats = query.getResultList();
 
