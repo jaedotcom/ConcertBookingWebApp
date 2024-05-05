@@ -14,7 +14,6 @@
         <hibernate.version>5.4.20.Final</hibernate.version>
         <apache.commons.version>3.10</apache.commons.version>
         <junit.version>4.12</junit.version>
-        <jpa.version>2.1</jpa.version>
 
         <mvn.compiler.version>3.8.0</mvn.compiler.version>
     </properties>
@@ -70,6 +69,7 @@
             <artifactId>hibernate-entitymanager</artifactId>
             <version>${hibernate.version}</version>
         </dependency>
+    </dependencies>
 
     <build>
         <plugins>

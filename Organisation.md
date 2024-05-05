@@ -124,8 +124,6 @@ Here are some potential new features we could add to our `concert-service` going
 2. **Social Features:** We could add features that allow users to share their bookings with friends, or see what concerts their friends are going to - adding new relevant Service methods to handle these social interactions.👯‍♂️
 
 3. **Advanced Search:** We could add more advanced search features, allowing users to search for concerts by genre, artist, location, etc - adding new methods to Service to handle these search queries.👀
-<<<<<<< HEAD
-=======
 
 ## Code Review ✅
 
@@ -135,4 +133,3 @@ We have noticed the lack of a catch Exception for the first function retirevecon
 
 The Version property was taught to us during the lectures so we thought it would be a good idea to add it on even though we can't really test for it 🙊. @Version was added to the Seat class and a LockMode of OPTIMISTIC_FORCE_INCREMENT was implemented to the seat query when making a booking. This increments the seats version number without modifying the seat object 💺.
 
->>>>>>> f40e35f (Took out JPA dependency from POM and added Code Review on Organisation.md ✅)
