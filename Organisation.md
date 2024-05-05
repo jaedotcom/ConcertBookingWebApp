@@ -15,6 +15,8 @@ It includes _User 🙋🏻‍♂️, Concert 🎵, Booking 🤳🏼, Seat 💺, 
 
 User represents the system's users, Concert represents the concerts that can be booked, Booking represents the bookings made by users, Seat represents the seats that can be booked for a concert, and Performer represents the performers in a concert. 🎹
 
+<img width="863" alt="Screenshot 2024-05-05 at 4 59 56 PM" src="https://github.com/CS331-2024/project-project-15/assets/83146793/d23f4b53-df86-4e84-a143-bdba9ffdd0eb">
+
 ## Detailed Domain model organisation 
 **Concert:** The Concert class uses @ElementCollection for handling dates, which is a good choice for collections of simple types. It also maintains a @ManyToMany relationship with the Performer class. 👯‍♂️
 
