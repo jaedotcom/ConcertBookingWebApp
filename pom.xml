@@ -71,14 +71,6 @@
             <version>${hibernate.version}</version>
         </dependency>
 
-        <!-- JPA -->
-        <dependency>
-            <groupId>org.hibernate.javax.persistence</groupId>
-            <artifactId>hibernate-jpa-2.1-api</artifactId>
-            <version>${jpa.version}</version>
-        </dependency>
-    </dependencies>
-
     <build>
         <plugins>
             <!-- Specify Java version -->
